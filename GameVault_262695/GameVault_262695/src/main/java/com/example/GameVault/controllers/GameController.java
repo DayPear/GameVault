@@ -20,9 +20,9 @@ import java.util.UUID;
 public class GameController {
     private static List<Juego> juegosDb = new ArrayList<>();
     private static long idCounter = 1;
+    private JuegoService juegoService;
 
-    private static final String UPLOAD_DIR = "src/main/resources/static/uploads/";
-
+    
     static {
         //juegosdb.add(new Juego(idCounter++, "The Legend of Zelda", "Aventura epica.", "zelda.jpg"));
     }
@@ -33,9 +33,17 @@ public class GameController {
     }
 
     @GetMapping({"/", "/juegos"})
-    public String listarJuegos(Model model){
-        model.addAttribute("juegos", juegosDb);
-        return "juegos";
+    public String listarJuegos(
+            @RequestParam(name="buscar", required=false) String buscar,
+            Model model) {
+        if (buscar != null && !buscar.isEmpty()) {
+            model.addAttribute("juegos", juegoService.buscarPorTitulo(buscar));
+            model.addAttribute("busquedaActual", buscar);
+        } else {
+            model.addAttribute("juegos", juegoService.listarTodos());
+        }
+
+            return "juegos";
     }
 
     @GetMapping("/juegos/nuevo")
@@ -46,28 +54,12 @@ public class GameController {
                                @RequestParam("descripcion") String descripcion,
                                @RequestParam("portada") MultipartFile portada){
 
-        String nombreArchivo = "default.png";
+        Juego nuevoJuego = new Juego();
+        nuevoJuego.setTitulo(titulo);
+        nuevoJuego.setDescripcion(descripcion);
 
-        if(!portada.isEmpty()){
-            try{
-                Path uploadPath = Paths.get(UPLOAD_DIR);
-                if(!Files.exists(uploadPath)){
-                    Files.createDirectories(uploadPath);
-                }
-
-                nombreArchivo = UUID.randomUUID().toString() + "_" + portada.getOriginalFilename();
-                Path filePath = uploadPath.resolve(nombreArchivo);
-
-                Files.copy(portada.getInputStream(), filePath);
-
-                System.out.println("Archivo guardado en: " + filePath.toAbsolutePath());
-            } catch (IOException e){
-                e.printStackTrace();
-            }
-        }
-
-        Juego nuevoJuego = new Juego(idCounter++, titulo, descripcion, nombreArchivo);
-        juegosDb.add(nuevoJuego);
+        juegoService.guardarJuego(nuevoJuego, portada);
+        
         return "redirect:/juegos";
     }
 }
