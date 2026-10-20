@@ -1,3 +1,15 @@
+package com.example.GameVault.service;
+
+import com.example.GameVault.models.Juego;
+import com.example.GameVault.repository.JuegoRepository;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.UUID;
+
 @Service
 public class JuegoService{
     @Autowired
@@ -9,7 +21,7 @@ public class JuegoService{
     }
 
     public void guardarJugo(Juego juego, MultipartFile portada){
-        String nombreArchivo = "default.png";
+        String nombreArchivo = juego.getPortadaUrl() != null ? juego.getPortadaUrl():"default.png";
 
         if(!portada.isEmpty()){
             nombreArchivo = guardarImagenLocal(portada);
@@ -18,6 +30,20 @@ public class JuegoService{
         juego.setPortadaUrl(nombreArchivo);
         juegoRepository.save(juego);
     }
+
+    public Juego obtenerJuegoPorId(Long id){
+        return juegoRepository.findById(id).orElse(null);
+    }
+
+    public void eliminarJuego(Long id){
+        juegoRepository.deleteById(id);
+    }
+
+    public List<Juego> obtenerJuegoPorUsuario(Long usuarioId){
+        return juegoRepository.findByUsuarioId(usuarioId);
+    }
+
+
 
     public String guardarImagenLocal(MultipartFile portada){
         try{
